@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ortho_utils"
+version = "0.1.0"
+description = "A minimal Python package with useful tools"
+requires-python = ">=3.8"
+authors = [{ name = "Eric Schneider", email = "franz.eric.schneider@gmail.com" }]
+# pip install .
+dependencies = [
+    "numpy",
+    "pytest",
+    "matplotlib",
+    "Pillow",
+    "opencv-python-headless",
+    "rasterio",
+    "shapely",
+]
+
+[tool.setuptools]
+packages = ["ortho_utils"]
+
+# pip install -e .[dev]
+[project.optional-dependencies]
+dev = ["pytest", "flake8", "black"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --cov=ortho_utils"
