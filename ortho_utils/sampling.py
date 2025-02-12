@@ -1,36 +1,58 @@
-def proportional_samples(cells: list, max_samples: int) -> list:
+import numpy
+from shapely.geometry import shape
+
+
+class Zone:
     """
-    Calculate proportional sample numbers for cells based on their areas.
+    This class is meant to house multiple methods of turning zone polygons and
+    density measurements into a measurement associated with a point.
+    """
+
+    def __init__(self, zone: dict) -> None:
+        # Data checking
+        if zone["geometry"]["type"] != "Polygon":
+            raise ValueError("All GeoJSON features must be Polygons")
+        coords = zone["geometry"]["coordinates"][0]
+        if len(coords) != 5:
+            raise ValueError("GeoJSON polygons must be rectangles")
+        if not numpy.allclose(coords[0], coords[-1]):
+            raise ValueError("Polygon points must wrap around")
+
+        self.polygon = shape(zone["geometry"])
+
+    @property
+    def area(self):
+        return self.polygon.area
+
+    # def calculate_density(self, points: numpy.ndarray) -> list:
+    #     """
+    #     From the defined zones and the captured density data, subclasses should
+    #     define different methods of extrapolating those measurements across
+    #     space.
+
+    #     Arguments:
+    #         points:
+    #     """
+    #     raise NotImplementedError("Subclasses implement their own method")
+
+
+def proportional_samples(zones: list, max_samples: int) -> list:
+    """
+    Calculate proportional sample numbers for zones based on their areas.
 
     Arguments:
-        cells: List of GeoJSON rectangles
+        zones: List of GeoJSON rectangles
         max_samples: Maximum number of samples for the largest area
 
-    Returns: List of sample numbers corresponding to each cell
+    Returns: List of sample numbers corresponding to each zone
     """
 
-    def calculate_area(coords):
-        """
-        GeoJSON coordinates are in the format
-        [[[lon1,lat1], [lon2,lat1], [lon2,lat2], [lon1,lat2], [lon1,lat1]]]
-        """
-        # Extract the lat/lon
-        lon = [pt[0] for pt in coords]
-        lat = [pt[1] for pt in coords]
-        # Calculate width and height in deg, then approximate area (deg^2)
-        return (max(lon) - min(lon)) * (max(lat) - min(lat))
+    if len(zones) == 0:
+        return []
 
-    # Calculate areas for all cells
-    areas = []
-    for cell in cells:
-        if cell["geometry"]["type"] != "Polygon":
-            raise ValueError("All GeoJSON features must be Polygons")
-        # Polygons can have multiple rings, we want the outer (hence [0])
-        areas.append(calculate_area(cell["geometry"]["coordinates"][0]))
-
-    # Find the maximum area for scaling
-    if areas:
-        max_area = max(areas)
+    # Calculate areas for all zones
+    areas = [Zone(zone).area for zone in zones]
+    max_area = max(areas)
 
     # Scale the area to get proportional samples, rounded to nearest int.
     # Ensure minimum of 1 sample.
