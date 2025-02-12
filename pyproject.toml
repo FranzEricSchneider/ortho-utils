@@ -24,7 +24,7 @@ packages = ["ortho_utils"]
 
 # pip install -e .[dev]
 [project.optional-dependencies]
-dev = ["pytest", "flake8", "black"]
+dev = ["pytest", "pytest-cov", "flake8", "black"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
