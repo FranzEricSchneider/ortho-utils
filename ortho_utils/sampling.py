@@ -1,5 +1,11 @@
+from collections import namedtuple
 import numpy
 from shapely.geometry import shape
+from shapely.vectorized import contains
+
+
+# Samples should be an array of lat/lon, and a density value
+Sample = namedtuple("Sample", ["coordinates", "value"])
 
 
 class Zone:
@@ -19,21 +25,38 @@ class Zone:
             raise ValueError("Polygon points must wrap around")
 
         self.polygon = shape(zone["geometry"])
+        self.samples = []
 
     @property
     def area(self):
         return self.polygon.area
 
-    # def calculate_density(self, points: numpy.ndarray) -> list:
-    #     """
-    #     From the defined zones and the captured density data, subclasses should
-    #     define different methods of extrapolating those measurements across
-    #     space.
+    def contains(self, points: numpy.ndarray):
+        """
+        Arguments:
+            points: (N, 2) array of (lon, lat) points
+        """
+        return contains(self.polygon, points[:, 0], points[:, 1])
 
-    #     Arguments:
-    #         points:
-    #     """
-    #     raise NotImplementedError("Subclasses implement their own method")
+    def associate(self, samples: list):
+        """
+        For points contained in this zone, add them to self.samples
+
+        Arguments:
+            samples: N length list of Sample() values
+        """
+        points = numpy.array([sample.coordinates for sample in samples])
+        for sample, contained in zip(samples, self.contains(points)):
+            if contained:
+                self.samples.append(sample)
+
+    def avg_samples(self):
+        """
+        Treat the density for the zone as an average, regardless of location.
+        """
+        if len(self.samples) == 0:
+            return None
+        return numpy.average([sample.value for sample in self.samples])
 
 
 def proportional_samples(zones: list, max_samples: int) -> list:

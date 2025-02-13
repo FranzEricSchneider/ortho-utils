@@ -1,6 +1,7 @@
+import numpy
 import pytest
 
-from ortho_utils.sampling import proportional_samples, Zone
+from ortho_utils.sampling import proportional_samples, Sample, Zone
 
 
 @pytest.fixture
@@ -50,6 +51,45 @@ class TestZone:
     def test_area(self, rects):
         assert Zone(rects[0]).area == 12
         assert Zone(rects[1]).area == 6
+
+    def test_contains(self, rects):
+        points = numpy.array(
+            [[0, 0], [2, 0.01], [2, 2], [10, 10], [11, 10.01], [11, 11], [-5, -5]]
+        )
+        zone = Zone(rects[0])
+        assert numpy.allclose(
+            zone.contains(points),
+            [False, True, True, False, False, False, False],
+        )
+        zone = Zone(rects[1])
+        assert numpy.allclose(
+            zone.contains(points),
+            [False, False, False, False, True, True, False],
+        )
+
+    def test_associate(self, rects):
+        samples = [
+            Sample(numpy.array([2, 2]), 1.23),
+            Sample(numpy.array([2.5, 2.5]), 4.56),
+            Sample(numpy.array([100, 100]), 7.89),
+        ]
+        zone = Zone(rects[0])
+        assert zone.samples == []
+        zone.associate(samples)
+        assert len(zone.samples) == 2
+        assert samples[0] == zone.samples[0]
+        assert samples[1] == zone.samples[1]
+
+    def test_avg_samples(self, rects):
+        samples = [
+            Sample(numpy.array([2, 2]), 2.5),
+            Sample(numpy.array([2.5, 2.5]), 7.5),
+            Sample(numpy.array([100, 100]), -100),
+        ]
+        zone = Zone(rects[0])
+        assert zone.avg_samples() is None
+        zone.associate(samples)
+        assert numpy.isclose(zone.avg_samples(), 5.0)
 
 
 class TestProportionalSamples:
